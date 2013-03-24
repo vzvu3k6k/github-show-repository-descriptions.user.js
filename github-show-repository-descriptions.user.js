@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           Github: Read all repository descriptions in user's repositories page
-// @description    Read all descriptions in https://github.com/{user}?tab=repositories
+// @description    Read all descriptions in https://github.com/{user}?tab=repositories, https://github.com/{organization}
 // @version        1.0
 // @author         vzvu3k6k
 // @match          https://github.com/*
