@@ -20,17 +20,17 @@
     var owner = location.pathname.slice(1);
 
     // Adds description and last updated time to <li>
-    var addBody = function(repoLi, description, updated_at){
+    var addBody = function(repoLi, descriptionText, updatedAtText){
         var body = document.createElement("div");
         body.classList.add("body");
-        var _description = document.createElement("p");
-        _description.classList.add("description");
-        _description.textContent = description || "(No Description)";
-        body.appendChild(_description);
-        var _updated_at = document.createElement("p");
-        _updated_at.classList.add("updated-at");
-        _updated_at.textContent = "Last updated: " + updated_at;
-        body.appendChild(_updated_at);
+        var description = document.createElement("p");
+        description.classList.add("description");
+        description.textContent = descriptionText || "(No Description)";
+        body.appendChild(description);
+        var update_at = document.createElement("p");
+        update_at.classList.add("updated-at");
+        update_at.textContent = "Last updated: " + updatedAtText;
+        body.appendChild(update_at);
 
         repoLi.appendChild(body);
         repoLi.classList.remove("simple");
