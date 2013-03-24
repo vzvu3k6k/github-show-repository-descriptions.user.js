@@ -17,7 +17,9 @@
     if(!document.querySelector('[data-tab="repo"] .selected'))
         return;
 
-    var owner = location.pathname.slice(1);
+    GM_addStyle(".repolist .addon.loading{padding: inherit;}");
+    GM_addStyle(".repolist .addon.loading:hover{background: inherit;}");
+    GM_addStyle(".repolist .addon.loading .indicator{padding-left: 20px;}");
 
     // Adds description and last updated time to <li>
     var addBody = function(repoLi, descriptionText, updatedAtText){
@@ -47,45 +49,81 @@
         return document.querySelectorAll(".repolist > li.simple");
     };
 
+    // returns the first visible repository element without description
+    var getFirstDisplayedSimpleRepo = function(){
+        var repos = getSimpleRepos();
+        for(var i = 0; i < repos.length; i++)
+            if(repos[i].style.display != "none")
+                return repos[i];
+        return null;
+    };
+
     // Gets details of repos
-    var getDetails = function(user, page, perPage, callback){
-        var url = "https://api.github.com/users/" + user + "/repos?type=owner&sort=pushed&direction=desc&per_page= " + perPage + "&page=" + page;
+    var getDetails = function(user, page, perPage, callback, onErrorCallback){
+        var url = "https://api.github.com/users/" + user + "/repos?type=owner&sort=pushed&direction=desc&per_page=" + perPage + "&page=" + page;
         var xhr = new XMLHttpRequest();
         xhr.open("GET", url);
         xhr.onload = function(){
             var result = JSON.parse(this.responseText);
             callback(result);
         };
+        xhr.onErrorCallback = onErrorCallback;
         xhr.send(null);
     };
 
-    var simpleRepos = getSimpleRepos();
-    if(simpleRepos.length > 0){
-        var li = document.createElement("li");
-        li.setAttribute("style", "min-height:0");
-        li.setAttribute("class", "center");
-        var button = document.createElement("a");
-        button.setAttribute("class", "button minibutton");
-        button.textContent = "show details of following repos";
-        button.addEventListener("click", function(event){
-            event.target.parentNode.setAttribute("style", "display: none");
-            getDetails(owner, 1, 100, function(repos){
-                var repoData = {};
-                for(var i = 0, l = repos.length; i < l; i++){
-                    repoData[repos[i].full_name] = repos[i];
-                }
+    // Adds or removes repository load icons from startLi to the num-th sibling of startLi
+    var toggleLoadIcons = function(startLi, num){
+        for(var i = 0, li = startLi; i < num; i++, li = li.nextElementSibling)
+            if(li.classList.contains("simple")){
+                var h3cl = li.querySelector("h3").classList;
+                h3cl.toggle("addon");
+                h3cl.toggle("loading");
+                li.querySelector("h3 a").classList.toggle("indicator");
+            }
+    };
 
-                for(var i = 0, l = simpleRepos.length; i < l; i++){
-                    var repo = simpleRepos[i];
-                    var data = repoData[getRepoFullName(repo)];
-                    if(data){
-                        addBody(repo, data.description, data.updated_at);
+    var owner = location.pathname.slice(1);
+    var loadCounter = 1, loading = false;
+    const loadNum = 50;
+    var removeListener = function(){document.removeEventListener("scroll", onScroll);};
+    var onScroll = function(){
+        var firstSimple = getFirstDisplayedSimpleRepo();
+        if(firstSimple == null) return;
+        if(loading) return;
+
+        if(firstSimple.getBoundingClientRect().top < window.innerHeight){
+            toggleLoadIcons(firstSimple, loadNum); // add loading icon
+
+            loading = true;
+            getDetails(owner, loadCounter, loadNum,
+                function onload(repos){
+                    loadCounter++;
+                    toggleLoadIcons(firstSimple, loadNum); // remove loading icon
+
+                    var repoData = {};
+                    for(var i = 0, l = repos.length; i < l; i++){
+                        repoData[repos[i].full_name] = repos[i];
                     }
-                    //else console.log("no data: " + repoFullName);
-                }
-            });
-        });
-        li.appendChild(button);
-        simpleRepos[0].parentNode.insertBefore(li, simpleRepos[0]);
-    }
+
+                    var simpleRepos = getSimpleRepos();
+                    for(var i = 0, l = simpleRepos.length; i < l; i++){
+                        var repo = simpleRepos[i];
+                        var data = repoData[getRepoFullName(repo)];
+                        if(data){
+                            addBody(repo, data.description, data.updated_at);
+                        }
+                        //else console.log("no data: " + repoFullName);
+                    }
+
+                    loading = false;
+                    if(getSimpleRepos().length == 0)
+                        removeListener();
+                },
+                function onerror(){
+                    console.info("xhr error");
+                    removeListener();
+                });
+        }
+    };
+    document.addEventListener("scroll", onScroll);
 })();
