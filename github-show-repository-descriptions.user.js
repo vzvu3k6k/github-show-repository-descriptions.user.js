@@ -88,4 +88,4 @@
         li.appendChild(button);
         simpleRepos[0].parentNode.insertBefore(li, simpleRepos[0]);
     }
-})()
+})();
