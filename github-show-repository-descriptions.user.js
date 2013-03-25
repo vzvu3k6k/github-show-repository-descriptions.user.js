@@ -16,24 +16,26 @@
 (function(){
     const loadNum = 30; // the number of repositories in page C
     var apiParam, pageNumOffset = 0;
-    if(!(/^\/[^\/]+\/repositories/.test(location.pathname))){
-        apiParam = "sort=pushed&direction=desc";   // A, B
-    }else if(!document.querySelector('[data-tab="repo"] .selected')){
-        apiParam = "sort=full_name&direction=asc"; // C
+    var owner = location.pathname.split("/")[1];
+    var loading = false;
+    if(!(/^\/[^\/]+\/repositories/.test(location.pathname))){ // C
+        apiParam = "sort=full_name&direction=asc";
         var match = location.search.match(/page=(\d+)/);
         if(match){
             pageNumOffset = parseInt(match[1], 10) - 1;
         }
+    }else if(!document.querySelector('[data-tab="repo"] .selected')){ // A, B
+        apiParam = "sort=pushed&direction=desc";
+        showDetails();
     }else{
         return;
     }
+    document.addEventListener("scroll", showDetails);
 
     GM_addStyle(".repolist .addon.loading{padding: inherit;}");
     GM_addStyle(".repolist .addon.loading:hover{background: inherit;}");
     GM_addStyle(".repolist .addon.loading .indicator{padding-left: 20px;}");
 
-    var owner = location.pathname.split("/")[1];
-    var loading = false;
     function removeListener(){document.removeEventListener("scroll", showDetails);};
     function showDetails(){
         var firstSimple = getFirstSimpleRepoOnDisplay();
@@ -73,7 +75,6 @@
                 removeListener();
             });
     };
-    document.addEventListener("scroll", showDetails);
 
     // Adds description and last updated time to <li>
     function addBody(repoLi, descriptionText, updatedAtText){
