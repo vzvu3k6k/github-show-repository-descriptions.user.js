@@ -41,7 +41,7 @@
 
     // {repository_owner}/{project_name} (eg. mojombo/jekyll)
     var getRepoFullName = function(repoLi){
-        return repoLi.querySelector("h3 a").href.replace("https://github.com/", "")
+        return repoLi.querySelector("h3 a").href.replace("https://github.com/", "");
     };
 
     // returns all repository elements
@@ -55,11 +55,14 @@
     };
 
     // returns the first visible repository element without description
-    var getFirstDisplayedSimpleRepo = function(){
+    var getFirstSimpleRepoOnDisplay = function(){
         var repos = getSimpleRepos();
         for(var i = 0; i < repos.length; i++)
-            if(repos[i].style.display != "none")
-                return repos[i];
+            if(repos[i].style.display != "none"){
+                var top = repos[i].getBoundingClientRect().top;
+                if(top > 0 && top < window.innerHeight)
+                    return repos[i];
+            }
         return null;
     };
 
@@ -77,14 +80,16 @@
     };
 
     // Adds or removes repository load icons from startLi to the num-th sibling of startLi
-    var toggleLoadIcons = function(startLi, num){
-        for(var i = 0, li = startLi; i < num; i++, li = li.nextElementSibling)
-            if(li.classList.contains("simple")){
-                var h3cl = li.querySelector("h3").classList;
+    var toggleLoadIcons = function(repoElements){
+        for(var i = 0; i < repoElements.length; i++){
+            var re = repoElements[i];
+            if(re.classList.contains("simple")){
+                var h3cl = re.querySelector("h3").classList;
                 h3cl.toggle("addon");
                 h3cl.toggle("loading");
-                li.querySelector("h3 a").classList.toggle("indicator");
+                re.querySelector("h3 a").classList.toggle("indicator");
             }
+        }
     };
 
     var owner = location.pathname.slice(1);
@@ -92,44 +97,42 @@
     const loadNum = 50;
     var removeListener = function(){document.removeEventListener("scroll", onScroll);};
     var onScroll = function(){
-        var firstSimple = getFirstDisplayedSimpleRepo();
+        var firstSimple = getFirstSimpleRepoOnDisplay();
         if(firstSimple == null) return;
         if(loading) return;
 
-        if(firstSimple.getBoundingClientRect().top < window.innerHeight){
-            toggleLoadIcons(firstSimple, loadNum); // add loading icon
+        var pageNum = Math.ceil((Array.apply(null, getRepos()).indexOf(firstSimple) + 1) / loadNum);
+        var loadingRepos = Array.apply(null, getSimpleRepos()).slice((pageNum - 1) * loadNum, pageNum * loadNum);
+        toggleLoadIcons(loadingRepos); // add loading icon
+        loading = true;
 
-            loading = true;
-            var pageNum = Math.ceil((Array.apply(null, getRepos()).indexOf(firstSimple) + 1) / loadNum);
-            console.log(pageNum);
-            getDetails(owner, pageNum, loadNum,
-                function onload(repos){
-                    toggleLoadIcons(firstSimple, loadNum); // remove loading icon
+        getDetails(owner, pageNum, loadNum,
+            function onload(repos){
+                toggleLoadIcons(loadingRepos); // remove loading icon
 
-                    var repoData = {};
-                    for(var i = 0, l = repos.length; i < l; i++){
-                        repoData[repos[i].full_name] = repos[i];
+                var repoData = {};
+                for(var i = 0, l = repos.length; i < l; i++){
+                    repoData[repos[i].full_name] = repos[i];
+                }
+
+                var simpleRepos = getSimpleRepos();
+                for(var i = 0, l = simpleRepos.length; i < l; i++){
+                    var repo = simpleRepos[i];
+                    var data = repoData[getRepoFullName(repo)];
+                    if(data){
+                        addBody(repo, data.description, data.updated_at);
                     }
+                    //else console.log("no data: " + repoFullName);
+                }
 
-                    var simpleRepos = getSimpleRepos();
-                    for(var i = 0, l = simpleRepos.length; i < l; i++){
-                        var repo = simpleRepos[i];
-                        var data = repoData[getRepoFullName(repo)];
-                        if(data){
-                            addBody(repo, data.description, data.updated_at);
-                        }
-                        //else console.log("no data: " + repoFullName);
-                    }
-
-                    loading = false;
-                    if(getSimpleRepos().length == 0)
-                        removeListener();
-                },
-                function onerror(){
-                    console.info("xhr error");
+                loading = false;
+                if(getSimpleRepos().length == 0)
                     removeListener();
-                });
-        }
+            },
+            function onerror(){
+                console.info("xhr error");
+                removeListener();
+            });
     };
     document.addEventListener("scroll", onScroll);
 })();
