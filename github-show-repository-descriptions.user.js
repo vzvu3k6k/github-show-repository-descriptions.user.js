@@ -32,81 +32,10 @@
     GM_addStyle(".repolist .addon.loading:hover{background: inherit;}");
     GM_addStyle(".repolist .addon.loading .indicator{padding-left: 20px;}");
 
-    // Adds description and last updated time to <li>
-    var addBody = function(repoLi, descriptionText, updatedAtText){
-        var body = document.createElement("div");
-        body.classList.add("body");
-        var description = document.createElement("p");
-        description.classList.add("description");
-        description.textContent = descriptionText || "(No Description)";
-        body.appendChild(description);
-        var update_at = document.createElement("p");
-        update_at.classList.add("updated-at");
-        update_at.textContent = "Last updated: " + updatedAtText;
-        body.appendChild(update_at);
-
-        repoLi.appendChild(body);
-        repoLi.classList.remove("simple");
-        repoLi.classList.add("not-simple-any-more");
-    };
-
-    // {repository_owner}/{project_name} (eg. mojombo/jekyll)
-    var getRepoFullName = function(repoLi){
-        return repoLi.querySelector("h3 a").href.replace("https://github.com/", "");
-    };
-
-    // returns all repository elements
-    var getRepos = function(){
-        return document.querySelectorAll(".repolist > li");
-    };
-
-    // returns repository elements without description
-    var getSimpleRepos = function(){
-        return document.querySelectorAll(".repolist > li.simple");
-    };
-
-    // returns the first visible repository element without description
-    var getFirstSimpleRepoOnDisplay = function(){
-        var repos = getSimpleRepos();
-        for(var i = 0; i < repos.length; i++)
-            if(repos[i].style.display != "none"){
-                var top = repos[i].getBoundingClientRect().top;
-                if(top > 0 && top < window.innerHeight)
-                    return repos[i];
-            }
-        return null;
-    };
-
-    // Gets details of repos
-    var getDetails = function(user, param, page, perPage, callback, onErrorCallback){
-        var url = "https://api.github.com/users/" + user + "/repos?type=owner&" + param + "&per_page=" + perPage + "&page=" + page;
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", url);
-        xhr.onload = function(){
-            var result = JSON.parse(this.responseText);
-            callback(result);
-        };
-        xhr.onErrorCallback = onErrorCallback;
-        xhr.send(null);
-    };
-
-    // Adds or removes repository load icons from startLi to the num-th sibling of startLi
-    var toggleLoadIcons = function(repoElements){
-        for(var i = 0; i < repoElements.length; i++){
-            var re = repoElements[i];
-            if(re.classList.contains("simple")){
-                var h3cl = re.querySelector("h3").classList;
-                h3cl.toggle("addon");
-                h3cl.toggle("loading");
-                re.querySelector("h3 a").classList.toggle("indicator");
-            }
-        }
-    };
-
     var owner = location.pathname.split("/")[1];
     var loading = false;
-    var removeListener = function(){document.removeEventListener("scroll", onScroll);};
-    var onScroll = function(){
+    function removeListener(){document.removeEventListener("scroll", showDetails);};
+    function showDetails(){
         var firstSimple = getFirstSimpleRepoOnDisplay();
         if(firstSimple == null) return;
         if(loading) return;
@@ -144,5 +73,76 @@
                 removeListener();
             });
     };
-    document.addEventListener("scroll", onScroll);
+    document.addEventListener("scroll", showDetails);
+
+    // Adds description and last updated time to <li>
+    function addBody(repoLi, descriptionText, updatedAtText){
+        var body = document.createElement("div");
+        body.classList.add("body");
+        var description = document.createElement("p");
+        description.classList.add("description");
+        description.textContent = descriptionText || "(No Description)";
+        body.appendChild(description);
+        var update_at = document.createElement("p");
+        update_at.classList.add("updated-at");
+        update_at.textContent = "Last updated: " + updatedAtText;
+        body.appendChild(update_at);
+
+        repoLi.appendChild(body);
+        repoLi.classList.remove("simple");
+        repoLi.classList.add("not-simple-any-more");
+    };
+
+    // {repository_owner}/{project_name} (eg. mojombo/jekyll)
+    function getRepoFullName(repoLi){
+        return repoLi.querySelector("h3 a").href.replace("https://github.com/", "");
+    };
+
+    // returns all repository elements
+    function getRepos(){
+        return document.querySelectorAll(".repolist > li");
+    };
+
+    // returns repository elements without description
+    function getSimpleRepos(){
+        return document.querySelectorAll(".repolist > li.simple");
+    };
+
+    // returns the first visible repository element without description
+    function getFirstSimpleRepoOnDisplay(){
+        var repos = getSimpleRepos();
+        for(var i = 0; i < repos.length; i++)
+            if(repos[i].style.display != "none"){
+                var top = repos[i].getBoundingClientRect().top;
+                if(top > 0 && top < window.innerHeight)
+                    return repos[i];
+            }
+        return null;
+    };
+
+    // Gets details of repos
+    function getDetails(user, param, page, perPage, callback, onErrorCallback){
+        var url = "https://api.github.com/users/" + user + "/repos?type=owner&" + param + "&per_page=" + perPage + "&page=" + page;
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", url);
+        xhr.onload = function(){
+            var result = JSON.parse(this.responseText);
+            callback(result);
+        };
+        xhr.onErrorCallback = onErrorCallback;
+        xhr.send(null);
+    };
+
+    // Adds or removes repository load icons from startLi to the num-th sibling of startLi
+    function toggleLoadIcons(repoElements){
+        for(var i = 0; i < repoElements.length; i++){
+            var re = repoElements[i];
+            if(re.classList.contains("simple")){
+                var h3cl = re.querySelector("h3").classList;
+                h3cl.toggle("addon");
+                h3cl.toggle("loading");
+                re.querySelector("h3 a").classList.toggle("indicator");
+            }
+        }
+    };
 })();
