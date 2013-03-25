@@ -44,6 +44,11 @@
         return repoLi.querySelector("h3 a").href.replace("https://github.com/", "")
     };
 
+    // returns all repository elements
+    var getRepos = function(){
+        return document.querySelectorAll(".repolist > li");
+    };
+
     // returns repository elements without description
     var getSimpleRepos = function(){
         return document.querySelectorAll(".repolist > li.simple");
@@ -83,7 +88,7 @@
     };
 
     var owner = location.pathname.slice(1);
-    var loadCounter = 1, loading = false;
+    var loading = false;
     const loadNum = 50;
     var removeListener = function(){document.removeEventListener("scroll", onScroll);};
     var onScroll = function(){
@@ -95,9 +100,10 @@
             toggleLoadIcons(firstSimple, loadNum); // add loading icon
 
             loading = true;
-            getDetails(owner, loadCounter, loadNum,
+            var pageNum = Math.ceil((Array.apply(null, getRepos()).indexOf(firstSimple) + 1) / loadNum);
+            console.log(pageNum);
+            getDetails(owner, pageNum, loadNum,
                 function onload(repos){
-                    loadCounter++;
                     toggleLoadIcons(firstSimple, loadNum); // remove loading icon
 
                     var repoData = {};
