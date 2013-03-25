@@ -9,13 +9,24 @@
 // ==/UserScript==
 
 // This script should work in
-//   * https://github.com/<organization> (eg. https://github.com/github)
-//   * https://github.com/<user>?tab=repositories(#) (eg. https://github.com/mojombo?tab=repositories)
+//   A. https://github.com/<organization> (eg. https://github.com/github)
+//   B. https://github.com/<user>?tab=repositories(#) (eg. https://github.com/mojombo?tab=repositories)
+//   C. https://github.com/<user|organization>/repositories (eg. https://github.com/mattn/repositories)
 
 (function(){
-    // check if the current page is a repository list.
-    if(!document.querySelector('[data-tab="repo"] .selected'))
+    const loadNum = 30; // the number of repositories in page C
+    var apiParam, pageNumOffset = 0;
+    if(!(/^\/[^\/]+\/repositories/.test(location.pathname))){
+        apiParam = "sort=pushed&direction=desc";   // A, B
+    }else if(!document.querySelector('[data-tab="repo"] .selected')){
+        apiParam = "sort=full_name&direction=asc"; // C
+        var match = location.search.match(/page=(\d+)/);
+        if(match){
+            pageNumOffset = parseInt(match[1], 10) - 1;
+        }
+    }else{
         return;
+    }
 
     GM_addStyle(".repolist .addon.loading{padding: inherit;}");
     GM_addStyle(".repolist .addon.loading:hover{background: inherit;}");
@@ -67,8 +78,8 @@
     };
 
     // Gets details of repos
-    var getDetails = function(user, page, perPage, callback, onErrorCallback){
-        var url = "https://api.github.com/users/" + user + "/repos?type=owner&sort=pushed&direction=desc&per_page=" + perPage + "&page=" + page;
+    var getDetails = function(user, param, page, perPage, callback, onErrorCallback){
+        var url = "https://api.github.com/users/" + user + "/repos?type=owner&" + param + "&per_page=" + perPage + "&page=" + page;
         var xhr = new XMLHttpRequest();
         xhr.open("GET", url);
         xhr.onload = function(){
@@ -92,21 +103,20 @@
         }
     };
 
-    var owner = location.pathname.slice(1);
+    var owner = location.pathname.split("/")[1];
     var loading = false;
-    const loadNum = 50;
     var removeListener = function(){document.removeEventListener("scroll", onScroll);};
     var onScroll = function(){
         var firstSimple = getFirstSimpleRepoOnDisplay();
         if(firstSimple == null) return;
         if(loading) return;
 
-        var pageNum = Math.ceil((Array.apply(null, getRepos()).indexOf(firstSimple) + 1) / loadNum);
+        var pageNum = Math.ceil((Array.apply(null, getRepos()).indexOf(firstSimple) + 1) / loadNum) + pageNumOffset;
         var loadingRepos = Array.apply(null, getSimpleRepos()).slice((pageNum - 1) * loadNum, pageNum * loadNum);
         toggleLoadIcons(loadingRepos); // add loading icon
         loading = true;
 
-        getDetails(owner, pageNum, loadNum,
+        getDetails(owner, apiParam, pageNum, loadNum,
             function onload(repos){
                 toggleLoadIcons(loadingRepos); // remove loading icon
 
