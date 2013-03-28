@@ -33,9 +33,6 @@
         return;
     }
 
-    GM_addStyle(".repolist .addon.loading{padding: inherit;}");
-    GM_addStyle(".repolist .addon.loading:hover{background: inherit;}");
-    GM_addStyle(".repolist .addon.loading .indicator{padding-left: 20px;}");
     document.addEventListener("scroll", showDetails);
 
     function showDetails(){
@@ -44,13 +41,14 @@
         if(loading) return;
 
         var pageNum = Math.ceil((Array.apply(null, getRepos()).indexOf(firstSimple) + 1) / loadNum) + pageNumOffset;
-        var loadingRepos = Array.apply(null, getSimpleRepos()).slice((pageNum - 1) * loadNum, pageNum * loadNum);
-        toggleLoadIcons(loadingRepos); // add loading icon
+        var loadingRepos = Array.apply(null, getRepos()).slice((pageNum - 1) * loadNum, pageNum * loadNum)
+                .filter(function(i){return i.classList.contains("simple");});
+        addLoadIcons(loadingRepos);
         loading = true;
 
         getDetails(owner, apiParam, pageNum, loadNum,
             function onload(repos){
-                toggleLoadIcons(loadingRepos); // remove loading icon
+                removeLoadIcons(loadingRepos);
 
                 var repoData = {};
                 for(var i = 0, l = repos.length; i < l; i++){
@@ -137,16 +135,18 @@
         return null;
     };
 
-    // Adds or removes repository load icons from startLi to the num-th sibling of startLi
-    function toggleLoadIcons(repoElements){
+    // Adds load icons to repositories
+    function addLoadIcons(repoElements){
         for(var i = 0; i < repoElements.length; i++){
-            var e = repoElements[i];
-            if(e.classList.contains("simple")){
-                var h3cl = e.querySelector("h3").classList;
-                h3cl.toggle("addon");
-                h3cl.toggle("loading");
-                e.querySelector("h3 a").classList.toggle("indicator");
-            }
+            var h3 = repoElements[i].querySelector("h3");
+            h3.insertAdjacentHTML("afterbegin", '<img src="https://a248.e.akamai.net/assets.github.com/images/spinners/octocat-spinner-64.gif" width="20" height="20" class="_loading-icon">');
+        }
+    };
+
+    function removeLoadIcons(repoElements){
+        for(var i = 0; i < repoElements.length; i++){
+            var icon = repoElements[i].querySelector("._loading-icon");
+            icon.parentNode.removeChild(icon);
         }
     };
 })();
