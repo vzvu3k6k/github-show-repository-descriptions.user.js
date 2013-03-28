@@ -65,8 +65,6 @@
                 }
 
                 loading = false;
-                if(getSimpleRepos().length == 0)
-                    removeListener();
             },
             function onerror(){
                 console.info("xhr error");
