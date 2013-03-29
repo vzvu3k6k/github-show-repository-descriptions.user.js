@@ -40,8 +40,8 @@
         if(firstSimple == null) return;
         if(loading) return;
 
-        var pageNum = Math.ceil((Array.apply(null, getRepos()).indexOf(firstSimple) + 1) / loadNum) + pageNumOffset;
-        var loadingRepos = Array.apply(null, getRepos()).slice((pageNum - 1) * loadNum, pageNum * loadNum)
+        var pageNum = Math.ceil((toArray(getRepos()).indexOf(firstSimple) + 1) / loadNum) + pageNumOffset;
+        var loadingRepos = toArray(getRepos()).slice((pageNum - 1) * loadNum, pageNum * loadNum)
                 .filter(function(i){return i.classList.contains("simple");});
         addLoadIcons(loadingRepos);
         loading = true;
@@ -147,4 +147,9 @@
             icon.parentNode.removeChild(icon);
         }
     };
+
+    // NodeList -> Array
+    function toArray(nodelist){
+        return Array.prototype.slice.call(nodelist);
+    }
 })();
